@@ -1,0 +1,38 @@
+IMPORT DATABASE TO THE MYSQL CONTAINER OF DOCKER
+
+First : Create a container for the mysql
+docker run --name matik_mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=matik -d mysql:latest
+
+Second : Copy the file
+docker cp ./matikdb.sql matik_mysql:/tmp/MYFILE.sql
+
+Third : Access the database of mysql and create a database
+docker exec -it matik_mysql mysql -u root -p
+Password : matik
+
+CREATE DATABASE matikdb;
+EXIT (Ctrl + z)
+
+Fourth : IMPORT
+docker exec -it matik_mysql bash -c "mysql -u root -p'matik' matikdb < /tmp/MYFILE.sql" 
+
+
+Fifth : Access the mysql again using 
+docker exec -it matik_mysql mysql -u root -p
+Password : matik
+
+use matikdb;
+
+Show * from authorization;
+
+
+Docker
+
+Docker compose down
+Docker compose up --build -d
+Or
+Docker compose up -d
+Docker compose build
+Docker network ls
+Docker inspect matikappdb
+Docker inspect matikapp

@@ -1,0 +1,56 @@
+# version: '3.8'
+
+# services:
+#   matikapp:
+#     image: matikapp
+#     build:
+#       context: .
+#       dockerfile: ./Dockerfile
+#     ports:
+#       - 8080:80
+
+#   sims-mysql:  # Corrected service name
+#     image: mysql
+#     environment:
+#       MYSQL_ROOT_PASSWORD: matik
+#       # MYSQL_DATABASE: matikdb
+#       # MYSQL_USER: root
+#       # MYSQL_PASSWORD: matik
+#     ports:
+#       - 3306:3306
+
+version: '3.4'
+
+networks:
+  matikappnetwork:
+
+services:
+  matikappdb:
+    container_name: matik-app-db
+    image: mysql
+    ports:
+      - 3306:3306
+    environment:
+      - MYSQL_ROOT_PASSWORD=matik
+      - MYSQL_DATABASE=matikdb
+    networks:
+      - matikappnetwork
+  matikapp:
+    container_name: matik-app
+    image: matikapp
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - 8080:80
+    depends_on:
+      - matikappdb
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      # - ConnectionStrings__DefaultConnection=Server=some-mysql;Port=3306;Database=matikdb;User=root;Password=matik;
+      - DB_HOST=matikappdb
+      - DB_NAME=matikdb
+      - DB_SA_PASSWORD=matik
+    networks:
+      - matikappnetwork
+

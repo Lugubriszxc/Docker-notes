@@ -1,0 +1,75 @@
+using System;
+using System.IO;
+using matikApp.Models;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Hosting;
+using MySqlConnector;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Build configuration from appsettings.json and environment variables
+var configuration = new ConfigurationBuilder()
+    .SetBasePath(builder.Environment.ContentRootPath)
+    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables() // Add environment variables to the configuration
+    .Build();
+
+// Retrieve environment variables for database connection
+var dbHost = Environment.GetEnvironmentVariable("DB_HOST") ?? "matik_mysql"; // Use service name here
+var dbName = Environment.GetEnvironmentVariable("DB_NAME") ?? "matikdb";
+var dbPassword = Environment.GetEnvironmentVariable("DB_SA_PASSWORD") ?? "matik";
+
+// Build the connection string
+var connectionString = $"Server={dbHost};Port=3306;Database={dbName};Uid=root;Pwd={dbPassword};";
+
+// Define the MySQL server version
+var serverVersion = new MySqlServerVersion(new Version(8, 0, 23));
+
+// Add services to the container.
+builder.Services.AddControllersWithViews();
+
+// Configure DbContext with the connection string
+builder.Services.AddDbContext<matikdbContext>(options =>
+    options.UseMySql(connectionString, serverVersion,
+        mysqlOptions => mysqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(30),
+            errorNumbersToAdd: null)));
+
+// Add cross-origin support
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(builder =>
+    {
+        builder.AllowAnyOrigin(); // Allow requests from any origin
+    });
+});
+
+var app = builder.Build();
+
+// Configure Kestrel to listen on port 80
+app.Urls.Add("http://*:80");
+
+// Configure the HTTP request pipeline.
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Home/Error");
+    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    app.UseHsts();
+}
+
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+
+app.UseRouting();
+app.UseCors();
+
+app.UseAuthorization();
+
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=PartialHome}/{action=HomeIndex}/{id?}");
+
+app.Run();
